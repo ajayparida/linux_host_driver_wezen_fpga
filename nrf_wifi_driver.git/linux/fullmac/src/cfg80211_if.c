@@ -2970,6 +2970,8 @@ struct wiphy *cfg80211_if_init(void)
 
 	/* Below flag is required for passing duration by iw utilities */
 	wiphy_ext_feature_set(wiphy, NL80211_EXT_FEATURE_SET_SCAN_DWELL);
+	/* Enable RM */
+	wiphy_ext_feature_set(wiphy, NL80211_EXT_FEATURE_RRM);
 
 #ifdef CONFIG_NRF700X_STA_MODE
 	/* Extended Capabilities */
