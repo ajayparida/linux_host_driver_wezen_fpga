@@ -269,7 +269,11 @@ static const struct rpu_addr_map RPU_ADDR_MAP_MCU[] = {
 #endif
 #ifdef SOC_WEZEN
 #define RPU_MEM_HPQ_INFO 0x20080024
+#ifdef SOFT_HPQM
+#define RPU_MEM_TX_CMD_BASE HOST_RPU_TX_CMD_START_ADDR
+#else
 #define RPU_MEM_TX_CMD_BASE 0x200800B8
+#endif  /*SOFT_HPQM */
 #define RPU_MEM_OTP_INFO 0x2008005C
 #define RPU_MEM_OTP_INFO_FLAGS 0x20084FDC
 #define RPU_MEM_LMAC_IF_INFO 0x20084FE0

@@ -140,6 +140,9 @@ struct nrf_wifi_hal_priv {
  * HAL layer.
  */
 struct nrf_wifi_hal_info {
+#ifdef SOFT_HPQM
+	struct soft_hpqm_info *soft_hpq;
+#endif /* SOFT_HPQM */
 	struct host_rpu_hpqm_info hpqm_info;
 	unsigned int rx_cmd_base;
 	unsigned int tx_cmd_base;

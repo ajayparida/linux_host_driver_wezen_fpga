@@ -17,6 +17,11 @@ endif
 LOW_POWER?=1
 ifeq ($(PLATFORM),WEZEN)
 MODE?=REG
+SOFT_HPQM?=N
+ifeq ($(SOFT_HPQM), Y)
+ccflags-y += -DSOFT_HPQM
+ccflags-y += -DCMD_RX_BUFF
+endif
 ccflags-y += -DRPU_VHT_SUPPORT
 ccflags-y += -DRPU_HE_SUPPORT
 ifeq ($(WLAN_SUPPORT), 1)

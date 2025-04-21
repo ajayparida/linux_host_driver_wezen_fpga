@@ -751,6 +751,71 @@ out:
 #endif /* CONFIG_NRF_WIFI_LOW_POWER */
 
 
+#ifdef SOFT_HPQM
+static bool hal_rpu_soft_hpq_is_empty(struct nrf_wifi_hal_dev_ctx *hal_dev_ctx)
+{
+	enum nrf_wifi_status status = NRF_WIFI_STATUS_FAIL;
+	unsigned int val = 0;
+	unsigned int current_index = 0;
+
+	status = hal_rpu_mem_read(hal_dev_ctx,
+                                  &current_index,
+                                  &hal_dev_ctx->rpu_info.soft_hpq->host_cmd_free_index,
+				  sizeof(unsigned int));
+
+        if (status != NRF_WIFI_STATUS_SUCCESS) {
+                nrf_wifi_osal_log_err(hal_dev_ctx->hpriv->opriv,
+                                      "%s: Read from the host_event_busy_index = %x address failed, val (0x%X)\n",
+                                       __func__,
+                                       &hal_dev_ctx->rpu_info.soft_hpq->host_cmd_free_index,
+                                       current_index);
+                return true;
+        }
+
+	status = hal_rpu_mem_read(hal_dev_ctx,
+				  &val,
+				  &hal_dev_ctx->rpu_info.soft_hpq->cmd_free_buffs[current_index],
+				  sizeof(unsigned int));
+
+	if (status != NRF_WIFI_STATUS_SUCCESS) {
+		nrf_wifi_osal_log_err(hal_dev_ctx->hpriv->opriv,
+				      "%s: Read from dequeue address failed, val (0x%X)\n",
+				      __func__,
+				      val);
+		return true;
+	}
+	if (val) {
+		return false;
+	}
+
+	return true;
+}
+
+static enum nrf_wifi_status hal_rpu_ready(struct nrf_wifi_hal_dev_ctx *hal_dev_ctx,
+					  enum NRF_WIFI_HAL_MSG_TYPE msg_type)
+{
+	bool is_empty = false;
+	unsigned int *cmd_free_buffs = NULL;
+
+	if (msg_type == NRF_WIFI_HAL_MSG_TYPE_CMD_CTRL) {
+		/* Check if any command pointers are available to post a message */
+		is_empty = hal_rpu_soft_hpq_is_empty(hal_dev_ctx);
+
+		if (is_empty == true) {
+			return NRF_WIFI_STATUS_FAIL;
+		}
+	} else {
+		nrf_wifi_osal_log_err(hal_dev_ctx->hpriv->opriv,
+				      "%s: Invalid msg type %d\n",
+				      __func__,
+				      msg_type);
+
+		return NRF_WIFI_STATUS_FAIL;
+	}
+
+	return NRF_WIFI_STATUS_SUCCESS;
+}
+#else
 static bool hal_rpu_hpq_is_empty(struct nrf_wifi_hal_dev_ctx *hal_dev_ctx,
 				 struct host_rpu_hpq *hpq)
 {
@@ -804,7 +869,7 @@ static enum nrf_wifi_status hal_rpu_ready(struct nrf_wifi_hal_dev_ctx *hal_dev_c
 
 	return NRF_WIFI_STATUS_SUCCESS;
 }
-
+#endif /* SOFT_HPQM */
 
 static enum nrf_wifi_status hal_rpu_ready_wait(struct nrf_wifi_hal_dev_ctx *hal_dev_ctx,
 					       enum NRF_WIFI_HAL_MSG_TYPE msg_type)
@@ -855,6 +920,218 @@ out:
 	return status;
 }
 
+#ifdef SOFT_HPQM
+static enum nrf_wifi_status hal_rpu_msg_post(struct nrf_wifi_hal_dev_ctx *hal_dev_ctx,
+					     enum NRF_WIFI_HAL_MSG_TYPE msg_type,
+					     unsigned int queue_id,
+					     unsigned int msg_addr)
+{
+	enum nrf_wifi_status status = NRF_WIFI_STATUS_FAIL;
+	struct host_rpu_hpq *busy_queue = NULL;
+	unsigned int current_index = 0;
+
+	if (queue_id >= MAX_NUM_OF_RX_QUEUES) {
+		nrf_wifi_osal_log_err(hal_dev_ctx->hpriv->opriv,
+				      "%s: Invalid queue_id (%d)\n",
+				      __func__,
+				      queue_id);
+		goto out;
+	}
+
+	if (msg_type == NRF_WIFI_HAL_MSG_TYPE_CMD_CTRL) {
+		status = hal_rpu_mem_read(hal_dev_ctx,
+                                          &current_index,
+                                          &hal_dev_ctx->rpu_info.soft_hpq->host_cmd_free_index,
+					  sizeof(unsigned int));
+
+                if (status != NRF_WIFI_STATUS_SUCCESS) {
+                        nrf_wifi_osal_log_err(hal_dev_ctx->hpriv->opriv,
+                                              "%s: Read from the host_cmd_free_index = %x address failed, val (0x%X)\n",
+                                              __func__,
+                                              &hal_dev_ctx->rpu_info.soft_hpq->host_cmd_free_index,
+                                              current_index);
+                        goto out;
+                }
+
+
+		status = hal_rpu_mem_write(hal_dev_ctx,
+					   &hal_dev_ctx->rpu_info.soft_hpq->cmd_busy_buffs[current_index],
+					   msg_addr,
+					   sizeof(unsigned int));
+
+		if (status != NRF_WIFI_STATUS_SUCCESS) {
+			nrf_wifi_osal_log_err(hal_dev_ctx->hpriv->opriv,
+					      "%s: Writing to cmd_busy_buffs[index=%d] address = %x failed msg_addr = %x\n",
+					      __func__,
+					      current_index,
+					      &hal_dev_ctx->rpu_info.soft_hpq->cmd_busy_buffs[current_index],
+					      msg_addr);
+			goto out;
+		}
+
+		current_index++;
+		if (current_index == HOST_RPU_CMD_BUFFERS)
+			current_index = 0;
+
+		status = hal_rpu_mem_write(hal_dev_ctx,
+					   &hal_dev_ctx->rpu_info.soft_hpq->host_cmd_free_index,
+					   current_index,
+					   sizeof(unsigned int));
+
+		if (status != NRF_WIFI_STATUS_SUCCESS) {
+			nrf_wifi_osal_log_err(hal_dev_ctx->hpriv->opriv,
+					      "%s: Writing to host_cmd_free_index = %x failed for val =%d\n",
+					      __func__,
+					      &hal_dev_ctx->rpu_info.soft_hpq->host_cmd_free_index,
+					      current_index);
+			goto out;
+		}
+	} else if (msg_type == NRF_WIFI_HAL_MSG_TYPE_CMD_DATA_TX) {
+		status = hal_rpu_mem_read(hal_dev_ctx,
+					  &current_index,
+					  &hal_dev_ctx->rpu_info.soft_hpq->host_tx_cmd_busy_index,
+					  sizeof (unsigned int));
+
+		if (status != NRF_WIFI_STATUS_SUCCESS) {
+                        nrf_wifi_osal_log_err(hal_dev_ctx->hpriv->opriv,
+                                              "%s: Read from the host_event_busy_index = %x address failed, val (0x%X)\n",
+                                               __func__,
+                                               &hal_dev_ctx->rpu_info.soft_hpq->host_tx_cmd_busy_index,
+                                               current_index);
+                        goto out;
+                }
+		status = hal_rpu_mem_write(hal_dev_ctx,
+					   &hal_dev_ctx->rpu_info.soft_hpq->tx_cmd_buffs[current_index],
+					   msg_addr,
+					   sizeof(unsigned int));
+		if (status != NRF_WIFI_STATUS_SUCCESS) {
+			nrf_wifi_osal_log_err(hal_dev_ctx->hpriv->opriv,
+					      "%s: Writing to tx_cmd_buffs[index=%d] address = %x failed val=%x\n",
+					       __func__,
+					       current_index,
+					       &hal_dev_ctx->rpu_info.soft_hpq->tx_cmd_buffs[current_index],
+					       msg_addr);
+			goto out;
+		}
+
+		current_index++;
+		if (current_index == HOST_RPU_TX_DESC)
+                        current_index = 0;
+
+		status = hal_rpu_mem_write(hal_dev_ctx,
+					   &hal_dev_ctx->rpu_info.soft_hpq->host_tx_cmd_busy_index,
+					   current_index,
+					   sizeof(unsigned int));
+
+		if (status != NRF_WIFI_STATUS_SUCCESS) {
+			nrf_wifi_osal_log_err(hal_dev_ctx->hpriv->opriv,
+					      "%s: Writing to host_cmd_free_index = %x failed for val =%d\n",
+					      __func__,
+					      &hal_dev_ctx->rpu_info.soft_hpq->host_tx_cmd_busy_index,
+					      current_index);
+			goto out;
+		}
+	} else if (msg_type == NRF_WIFI_HAL_MSG_TYPE_CMD_DATA_RX) {
+		busy_queue = &hal_dev_ctx->rpu_info.hpqm_info.rx_buf_busy_queue[queue_id];
+	} else {
+		nrf_wifi_osal_log_err(hal_dev_ctx->hpriv->opriv,
+				      "%s: Invalid msg_type (%d)\n",
+				      __func__,
+				      msg_type);
+		goto out;
+	}
+
+	if (msg_type != NRF_WIFI_HAL_MSG_TYPE_CMD_DATA_RX) {
+		/* Indicate to the RPU that the information has been posted */
+		status = hal_rpu_msg_trigger(hal_dev_ctx);
+
+		if (status != NRF_WIFI_STATUS_SUCCESS) {
+			nrf_wifi_osal_log_err(hal_dev_ctx->hpriv->opriv,
+					      "%s: Posting command to RPU failed\n",
+					      __func__);
+			goto out;
+		}
+	}
+out:
+	return status;
+}
+static enum nrf_wifi_status hal_rpu_msg_get_addr(struct nrf_wifi_hal_dev_ctx *hal_dev_ctx,
+						 enum NRF_WIFI_HAL_MSG_TYPE msg_type,
+						 unsigned int *msg_addr)
+{
+	enum nrf_wifi_status status = NRF_WIFI_STATUS_FAIL;
+	unsigned int val = 0;
+        unsigned int current_index = 0;
+
+	if (msg_type == NRF_WIFI_HAL_MSG_TYPE_CMD_CTRL) {
+		status = hal_rpu_mem_read(hal_dev_ctx,
+					  &current_index,
+					  &hal_dev_ctx->rpu_info.soft_hpq->host_cmd_free_index,
+					  sizeof (unsigned int));
+
+		if (status != NRF_WIFI_STATUS_SUCCESS) {
+			nrf_wifi_osal_log_err(hal_dev_ctx->hpriv->opriv,
+					      "%s: Read from the host_event_busy_index = %x address failed, val (0x%X)\n",
+					      __func__,
+					      &hal_dev_ctx->rpu_info.soft_hpq->host_cmd_free_index,
+					      current_index);
+			goto out;
+		}
+
+		status = hal_rpu_mem_read(hal_dev_ctx,
+					  &val,
+					  &hal_dev_ctx->rpu_info.soft_hpq->cmd_free_buffs[current_index],
+					  sizeof (unsigned int));
+
+		if (status != NRF_WIFI_STATUS_SUCCESS) {
+			nrf_wifi_osal_log_err(hal_dev_ctx->hpriv->opriv,
+					      "%s: Read from the cmd_free_buffs[%d] = %x address failed, val (0x%X)\n",
+					      __func__,
+					      current_index,
+					      &hal_dev_ctx->rpu_info.soft_hpq->cmd_free_buffs[current_index],
+					      val);
+			goto out;
+		}
+	} else {
+		nrf_wifi_osal_log_err(hal_dev_ctx->hpriv->opriv,
+				      "%s: Invalid msg type %d\n",
+				      __func__,
+				      msg_type);
+		return NRF_WIFI_STATUS_FAIL;
+	}
+
+
+	if (!val) {
+		nrf_wifi_osal_log_err(hal_dev_ctx->hpriv->opriv,
+				      "%s:No valid content avaialble in the expected index \n",
+				      __func__,
+				      current_index);
+		*msg_addr = 0;
+		status = NRF_WIFI_STATUS_FAIL;
+		goto out;
+	} else {
+		/* Valid address has been read. So write back 0 to same index address at cmd_free_buffs*/
+		status = hal_rpu_mem_write(hal_dev_ctx,
+					   &hal_dev_ctx->rpu_info.soft_hpq->cmd_free_buffs[current_index],
+					   0x0,
+					   sizeof(unsigned int));
+
+		if (status != NRF_WIFI_STATUS_SUCCESS) {
+			nrf_wifi_osal_log_err(hal_dev_ctx->hpriv->opriv,
+					      "%s: Write to address %xfailed, val (0x%X)\n",
+					      __func__,
+					      &hal_dev_ctx->rpu_info.soft_hpq->cmd_free_buffs[current_index],
+					      0x0);
+			return true;
+		}
+
+		*msg_addr = val; /* Assign the address read from cmd_free_buffs current_index */
+		status = NRF_WIFI_STATUS_SUCCESS;
+	}
+out:
+	return status;
+}
+#else
 
 static enum nrf_wifi_status hal_rpu_msg_post(struct nrf_wifi_hal_dev_ctx *hal_dev_ctx,
 					     enum NRF_WIFI_HAL_MSG_TYPE msg_type,
@@ -947,7 +1224,7 @@ static enum nrf_wifi_status hal_rpu_msg_get_addr(struct nrf_wifi_hal_dev_ctx *ha
 out:
 	return status;
 }
-
+#endif /*SOFT_HPQM */
 
 static enum nrf_wifi_status hal_rpu_msg_write(struct nrf_wifi_hal_dev_ctx *hal_dev_ctx,
 					      enum NRF_WIFI_HAL_MSG_TYPE msg_type,
@@ -1183,7 +1460,9 @@ enum nrf_wifi_status nrf_wifi_hal_data_cmd_send(struct nrf_wifi_hal_dev_ctx *hal
 	unsigned int max_cmd_size = 0;
 	unsigned int addr = 0;
 	unsigned int host_addr = 0;
-
+#ifdef SOFT_HPQM
+	unsigned int current_index= 0;
+#endif /* SOFT_HPQM */
 
 	nrf_wifi_osal_spinlock_take(hal_dev_ctx->hpriv->opriv,
 				    hal_dev_ctx->lock_hal);
@@ -1640,7 +1919,10 @@ enum nrf_wifi_status nrf_wifi_hal_dev_init(struct nrf_wifi_hal_dev_ctx *hal_dev_
 				      __func__);
 		goto out;
 	}
+#ifdef SOFT_HPQM
+	hal_dev_ctx->rpu_info.soft_hpq = (struct soft_hpqm_info *)HOST_RPU_GDRAM_START_ADDR;
 
+#else
 	/* Read the HPQM info for all the queues provided by the RPU
 	 * (like command, event, RX buf queues etc)
 	 */
@@ -1648,6 +1930,7 @@ enum nrf_wifi_status nrf_wifi_hal_dev_init(struct nrf_wifi_hal_dev_ctx *hal_dev_
 				  &hal_dev_ctx->rpu_info.hpqm_info,
 				  RPU_MEM_HPQ_INFO,
 				  sizeof(hal_dev_ctx->rpu_info.hpqm_info));
+#endif /*SOFT_HPQM */
 
 	if (status != NRF_WIFI_STATUS_SUCCESS) {
 		nrf_wifi_osal_log_err(hal_dev_ctx->hpriv->opriv,
