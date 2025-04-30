@@ -1508,7 +1508,7 @@ int __init nrf_wifi_init_lnx(void)
 
 
 #ifdef TWT_SUPPORT
-	callbk_fns.twt_cfg_callbk_fn = &nrf_wifi_twt_cfg_callbk_fn;
+	callbk_fns.twt_config_callbk_fn = &nrf_wifi_twt_cfg_callbk_fn;
 	callbk_fns.twt_teardown_callbk_fn = &nrf_wifi_twt_teardown_callbk_fn;
 #endif /* TWT_SUPPORT */	
 #ifdef LOW_POWER
