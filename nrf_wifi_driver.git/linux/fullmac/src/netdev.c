@@ -313,7 +313,7 @@ void nrf_wifi_netdev_del_vif(struct net_device *netdev)
 {
 	struct nrf_wifi_fmac_vif_ctx_lnx *vif_ctx_lnx = NULL;
 	vif_ctx_lnx = netdev_priv(netdev);
-
+#ifdef HOST_CFG80211_SUPPORT
 //#ifdef notyet
 	if (vif_ctx_lnx->nrf_wifi_scan_req) {
 		/* Structure is being passed instead of bool parameter */
@@ -328,7 +328,7 @@ void nrf_wifi_netdev_del_vif(struct net_device *netdev)
 //		cfg80211_scan_done(vif_ctx_lnx->nrf_wifi_scan_req, true);
 //#endif 
 /* notyet */
-
+#endif /* HOST_CFG80211_SUPPORT */
 	unregister_netdevice(netdev);
 	netdev->ieee80211_ptr = NULL;
 }

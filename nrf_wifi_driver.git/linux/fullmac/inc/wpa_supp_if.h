@@ -77,7 +77,8 @@ void nrf_wifi_wpa_supp_cookie_rsp_callbk_fn(void *os_vif_ctx,
 					      unsigned int event_len);
 void nrf_wifi_wpa_supp_disp_scan_res_callbk_fn(void *os_vif_ctx,
 		struct nrf_wifi_umac_event_new_scan_display_results *scan_res,
-		unsigned int event_len);
+		unsigned int event_len,
+		bool more_res);
 
 void nrf_wifi_wpa_supp_get_key_callbk_fn(void *os_vif_ctx,
 		struct nrf_wifi_umac_event_get_key *get_key_resp,

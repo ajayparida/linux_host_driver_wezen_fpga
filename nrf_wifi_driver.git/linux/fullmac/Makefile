@@ -3,7 +3,7 @@ ROOT_INC_DIR	= $(shell cd $(PWD); cd ../../../nrfxlib/nrf_wifi; pwd)
 OSAL_DIR        = ../../../nrfxlib/nrf_wifi
 LINUX_SHIM_INC_DIR = $(shell cd $(PWD); pwd)
 LINUX_SHIM_DIR = .
-HOST_CFG80211?=Y
+HOST_CFG80211?=N
 FW_LOAD?=PATCH
 
 define func_err=

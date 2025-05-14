@@ -197,6 +197,9 @@ enum nrf_wifi_status umac_cmd_init(struct nrf_wifi_fmac_dev_ctx *fmac_dev_ctx,
 		umac_cmd_data->disable_beamforming = 1;
 	}
 
+#ifdef NRF_WIFI_MGMT_BUFF_OFFLOAD
+	umac_cmd_data->mgmt_buff_offload =  1;
+#endif /* NRF_WIFI_MGMT_BUFF_OFFLOAD */
 	 status = nrf_wifi_hal_ctrl_cmd_send(fmac_dev_ctx->hal_dev_ctx,
 					    umac_cmd,
 					    (sizeof(*umac_cmd) + len));

@@ -11,6 +11,11 @@
 #include "fmac_cmd.h"
 #include "fmac_vif.h"
 #include "netlink.h"
+#ifdef SOC_WEZEN
+#ifdef SOC_WEZEN_SECURE_DOMAIN
+#include "fmac_api.h"
+#endif
+#endif
 
 #ifdef TWT_SUPPORT
 int twt_setup_event;
@@ -344,7 +349,8 @@ void nrf_wifi_wpa_supp_set_if_callbk_fn(void *os_vif_ctx,
 
 void nrf_wifi_wpa_supp_disp_scan_res_callbk_fn(void *os_vif_ctx,
 		struct nrf_wifi_umac_event_new_scan_display_results *scan_res,
-		unsigned int event_len)
+		unsigned int event_len,
+		bool more_res)
 {
 	struct nrf_wifi_fmac_vif_ctx_lnx *vif_ctx_lnx = NULL;
 
@@ -430,6 +436,12 @@ static void wpa_supp_if_process_cmd(void *cmd,
 	struct nrf_wifi_umac_hdr *umac_hdr = NULL;
 	struct nrf_wifi_umac_cmd_chg_vif_attr *chg_vif_cmd = NULL;
 	struct nrf_wifi_umac_cmd_add_vif *add_vif_cmd = NULL;
+#ifdef SOC_WEZEN
+#ifdef SOC_WEZEN_SECURE_DOMAIN
+	struct nrf_wifi_umac_cmd_key *key_cmd = NULL;
+	enum nrf_wifi_status status = NRF_WIFI_STATUS_FAIL;
+#endif
+#endif
 
 	umac_hdr = cmd;
 	/* TODO: Need mechanism in place to get the RPU index from wpa_supplicant */
@@ -439,7 +451,40 @@ static void wpa_supp_if_process_cmd(void *cmd,
 		pr_err("Received netlink message for invalid RPU\n");
 		return;
 	}
+#ifdef SOC_WEZEN
+#ifdef SOC_WEZEN_SECURE_DOMAIN
+	if (umac_hdr->cmd_evnt == NRF_WIFI_UMAC_CMD_NEW_KEY) {
+		key_cmd = (struct nrf_wifi_umac_cmd_key *)cmd;
 
+		status = nrf_wifi_fmac_add_key(rpu_ctx_lnx->rpu_ctx,
+					       key_cmd->umac_hdr.ids.wdev_id,
+					       &key_cmd->key_info,
+					       key_cmd->mac_addr);
+
+		if (status == NRF_WIFI_STATUS_FAIL)
+			pr_err("%s: nrf_wifi_fmac_add_key failed\n", __func__);
+	} else if (umac_hdr->cmd_evnt == NRF_WIFI_UMAC_CMD_DEL_KEY) {
+		key_cmd = (struct nrf_wifi_umac_cmd_key *)cmd;
+
+		status = nrf_wifi_fmac_del_key(rpu_ctx_lnx->rpu_ctx,
+					       key_cmd->umac_hdr.ids.wdev_id,
+					       &key_cmd->key_info,
+					       key_cmd->mac_addr);
+
+		if (status == NRF_WIFI_STATUS_FAIL)
+			pr_err("%s: nrf_wifi_fmac_del_key failed\n", __func__);
+	} else if (umac_hdr->cmd_evnt == NRF_WIFI_UMAC_CMD_SET_KEY) {
+		key_cmd = (struct nrf_wifi_umac_cmd_key *)cmd;
+
+		status = nrf_wifi_fmac_set_key(rpu_ctx_lnx->rpu_ctx,
+					       key_cmd->umac_hdr.ids.wdev_id,
+					       &key_cmd->key_info);
+
+		if (status == NRF_WIFI_STATUS_FAIL)
+			pr_err("%s: nrf_wifi_fmac_set_key failed\n", __func__);
+	}
+#endif
+#endif
 	switch(umac_hdr->cmd_evnt) {
 #ifdef only_for_logging
 	case NRF_WIFI_UMAC_CMD_TRIGGER_SCAN:
@@ -644,9 +689,25 @@ static void wpa_supp_if_process_cmd(void *cmd,
 		break;
 	}
 
+#ifdef SOC_WEZEN
+#ifdef SOC_WEZEN_SECURE_DOMAIN
+	if ((umac_hdr->cmd_evnt != NRF_WIFI_UMAC_CMD_NEW_KEY) &&
+	    (umac_hdr->cmd_evnt != NRF_WIFI_UMAC_CMD_DEL_KEY) &&
+	    (umac_hdr->cmd_evnt != NRF_WIFI_UMAC_CMD_SET_KEY)) {
+		umac_cmd_cfg(rpu_ctx_lnx->rpu_ctx,
+			     cmd,
+			     cmd_len);
+	}
+#else
 	umac_cmd_cfg(rpu_ctx_lnx->rpu_ctx,
 		     cmd,
 		     cmd_len);
+#endif /* SOC_WEZEN_SECURE_DOMAIN */
+#else
+	umac_cmd_cfg(rpu_ctx_lnx->rpu_ctx,
+		     cmd,
+		     cmd_len);
+#endif /* SOC_WEZEN */
 }
 
 int wpa_supp_if_init(void)

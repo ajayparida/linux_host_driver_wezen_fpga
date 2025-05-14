@@ -899,7 +899,11 @@ enum nrf_wifi_status nrf_wifi_fmac_dev_init_lnx(struct nrf_wifi_ctx_lnx *rpu_ctx
 	rtnl_lock();
 
 	vif_ctx_lnx = nrf_wifi_lnx_wlan_fmac_add_vif(rpu_ctx_lnx,
+#ifdef HOST_CFG80211_SUPPORT
 						  "nrf_wifi",
+#else
+						  "wlan0",
+#endif
 #ifdef SOC_WEZEN
 						  default_mac_addr,
 #else
@@ -1461,11 +1465,11 @@ int __init nrf_wifi_init_lnx(void)
 		&nrf_wifi_cfg80211_rx_bcn_prb_rsp_callbk_fn;
 #endif /* CONFIG_WIFI_MGMT_RAW_SCAN_RESULTS */
 	callbk_fns.set_if_callbk_fn = &nrf_wifi_set_if_callbk_fn;
+	callbk_fns.process_rssi_from_rx = &nrf_wifi_process_rssi_from_rx;
 #ifdef HOST_CFG80211_SUPPORT	
 	callbk_fns.chnl_get_callbk_fn = &nrf_wifi_chnl_get_callbk_fn;
 	callbk_fns.tx_pwr_get_callbk_fn = &nrf_wifi_tx_pwr_get_callbk_fn;
 	callbk_fns.cookie_rsp_callbk_fn = &nrf_wifi_cookie_rsp_callbk_fn;
-	callbk_fns.process_rssi_from_rx = &nrf_wifi_process_rssi_from_rx;
 	callbk_fns.scan_start_callbk_fn =
 		&nrf_wifi_cfg80211_scan_start_callbk_fn;
 	callbk_fns.scan_res_callbk_fn = &nrf_wifi_cfg80211_scan_res_callbk_fn;
@@ -1496,14 +1500,11 @@ int __init nrf_wifi_init_lnx(void)
 	callbk_fns.roc_callbk_fn = &nrf_wifi_wpa_supp_roc_callbk_fn;
 	callbk_fns.roc_cancel_callbk_fn = &nrf_wifi_wpa_supp_roc_cancel_callbk_fn;
 	callbk_fns.tx_status_callbk_fn = &nrf_wifi_wpa_supp_tx_status_callbk_fn;
-	callbk_fns.new_if_callbk_fn = &nrf_wifi_wpa_supp_new_if_callbk_fn;
-	callbk_fns.get_wiphy_callbk_fn = &nrf_wifi_wpa_supp_get_wiphy_callbk_fn;
-	callbk_fns.get_reg_callbk_fn = &nrf_wifi_wpa_supp_get_reg_callbk_fn;
-	callbk_fns.set_reg_callbk_fn = &nrf_wifi_wpa_supp_set_reg_callbk_fn;
-	callbk_fns.wpa_supp_set_if_callbk_fn = &nrf_wifi_wpa_supp_set_if_callbk_fn;
-	callbk_fns.wpa_supp_disp_scan_res_callbk_fn = &nrf_wifi_wpa_supp_disp_scan_res_callbk_fn;
-	callbk_fns.get_key_callbk_fn = &nrf_wifi_wpa_supp_get_key_callbk_fn;
-	callbk_fns.reg_change_callbk_fn = &nrf_wifi_wpa_supp_reg_change_callbk_fn;
+	callbk_fns.get_interface_callbk_fn = &nrf_wifi_wpa_supp_new_if_callbk_fn;
+	callbk_fns.event_get_wiphy = &nrf_wifi_wpa_supp_get_wiphy_callbk_fn;
+	callbk_fns.event_get_reg = &nrf_wifi_wpa_supp_get_reg_callbk_fn;
+	callbk_fns.set_if_callbk_fn = &nrf_wifi_wpa_supp_set_if_callbk_fn;
+	callbk_fns.disp_scan_res_callbk_fn = &nrf_wifi_wpa_supp_disp_scan_res_callbk_fn;
 #endif /* HOST_CFG80211_SUPPORT */
 
 
