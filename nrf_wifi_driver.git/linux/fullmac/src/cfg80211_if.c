@@ -1347,7 +1347,14 @@ int nrf_wifi_cfg80211_auth(struct wiphy *wiphy,
 			       1, auth_info->sae.sae_data, auth_info->sae.sae_data_len, 1);
 #endif
 	}
-
+#ifdef notyet
+	if (req->bss->transmitted_bss) {
+		auth_info->transmitted_bssid_valid = 1;
+		memcpy(auth_info->transmitted_bssid,
+		       req->bss->transmitted_bss->bssid,
+		       ETH_ALEN);
+       }
+#endif
 	status = nrf_wifi_fmac_auth(rpu_ctx_lnx->rpu_ctx,
 				      vif_ctx_lnx->if_idx,
 				      auth_info);
