@@ -87,4 +87,7 @@ void nrf_wifi_wpa_supp_get_key_callbk_fn(void *os_vif_ctx,
 void nrf_wifi_wpa_supp_reg_change_callbk_fn(void *os_vif_ctx,
 		struct nrf_wifi_event_regulatory_change *reg_chng,
 		unsigned int event_len);
+void nrf_wifi_wpa_supp_get_station_callbk_fn(void *os_vif_ctx,
+		struct nrf_wifi_umac_event_new_station *station_info_event,
+		unsigned int event_len);
 #endif /* __WPA_SUPP_IF_H__ */

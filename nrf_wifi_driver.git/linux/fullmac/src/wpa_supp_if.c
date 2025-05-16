@@ -429,6 +429,20 @@ void nrf_wifi_wpa_supp_reg_change_callbk_fn(void *os_vif_ctx,
 		     event_len,
 		     NL_SOCK_TYPE_ASYNC);
 }
+
+void nrf_wifi_wpa_supp_get_station_callbk_fn(void *os_vif_ctx,
+			struct nrf_wifi_umac_event_new_station *station_info_event,
+			unsigned int event_len)
+{
+	struct nrf_wifi_fmac_vif_ctx_lnx *vif_ctx_lnx = NULL;
+
+	vif_ctx_lnx = os_vif_ctx;
+
+	netlink_send((unsigned char *)station_info_event,
+		     event_len,
+		     NL_SOCK_TYPE_SYNC);
+}
+
 static void wpa_supp_if_process_cmd(void *cmd,
 				    unsigned int cmd_len)
 {
