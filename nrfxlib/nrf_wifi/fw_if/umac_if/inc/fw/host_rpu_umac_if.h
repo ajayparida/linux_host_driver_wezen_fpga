@@ -141,7 +141,11 @@ enum nrf_wifi_umac_commands {
 	NRF_WIFI_UMAC_CMD_SET_LISTEN_INTERVAL,
 	/** Configure extended power save @ref nrf_wifi_umac_cmd_config_extended_ps */
 	NRF_WIFI_UMAC_CMD_CONFIG_EXTENDED_PS,
-	/** Send RX Buffers to UMAC  */
+	/** Configure quiet period @ref nrf_wifi_umac_cmd_config_quiet_period */
+	NRF_WIFI_UMAC_CMD_CONFIG_QUIET_PERIOD,
+	/** Command to specify power save exit strategy */
+	NRF_WIFI_UMAC_CMD_PS_EXIT_STRATEGY,
+	/** Configure rx buffers to lmac @ref nrf_wifi_cmd_rx_buf_info  */
 	NRF_WIFI_UMAC_CMD_CONFIG_RX_BUF,
 };
 
@@ -3473,6 +3477,29 @@ struct nrf_wifi_umac_event_cmd_status {
 	unsigned int cmd_id;
 	/** Status codes */
 	unsigned int cmd_status;
+} __NRF_WIFI_PKD;
+
+/**
+ * @brief This structure defines the parameters required for setting quiet period.
+ *
+ */
+struct nrf_wifi_umac_cmd_config_quiet_period {
+	/** Header @ref nrf_wifi_umac_hdr */
+	struct nrf_wifi_umac_hdr umac_hdr;
+	/** quiet period value in seconds */
+	unsigned int quiet_period_in_sec;
+} __NRF_WIFI_PKD;
+
+/**
+ * @brief This structure defines the command used to configure the power save exit
+ * strategy for retrieving buffered data from the AP in power save mode.
+ *
+ */
+struct nrf_wifi_cmd_ps_exit_strategy {
+	/** Header @ref nrf_wifi_umac_hdr */
+	struct nrf_wifi_umac_hdr umac_hdr;
+	/** Power save exit strategy */
+	unsigned char ps_exit_strategy;
 } __NRF_WIFI_PKD;
 
 #endif /* __HOST_RPU_UMAC_IF_H */

@@ -158,7 +158,9 @@ enum nrf_wifi_rx_pkt_type {
 	/** The Rx packet is of type data */
 	NRF_WIFI_RX_PKT_DATA,
 	/** RX packet is beacon or probe response */
-	NRF_WIFI_RX_PKT_BCN_PRB_RSP
+	NRF_WIFI_RX_PKT_BCN_PRB_RSP,
+	/** Raw Rx packet */
+	NRF_WIFI_RAW_RX_PKT,
 };
 
 /**
@@ -198,7 +200,7 @@ struct nrf_wifi_rx_buff {
 	/** Number of packets in this event */
 	unsigned char rx_pkt_cnt;
 	/** Depricated */
-	unsigned char reserved;
+	unsigned char rpu_align_offset;
 	/** MAC header length. Same for all packets in this event */
 	unsigned char mac_header_len;
 	/** Frequency on which this packet received */

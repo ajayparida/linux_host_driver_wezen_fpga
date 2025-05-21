@@ -153,6 +153,20 @@ enum nrf_wifi_sys_commands {
 	NRF_WIFI_CMD_RT_REQ_SET_REG,
 	/** Command to enable/disable fixed data rate in regular mode */
 	NRF_WIFI_CMD_TX_FIX_DATA_RATE,
+	/** Command to set channel in promiscuous & packet injector mode */
+	NRF_WIFI_CMD_CHANNEL,
+	/** Command to configure promiscuous mode, Monitor mode  & packet injector mode*/
+	NRF_WIFI_CMD_RAW_CONFIG_MODE,
+	/** Command to configure promiscuous mode, Monitor mode filter*/
+	NRF_WIFI_CMD_RAW_CONFIG_FILTER,
+	/** Command to configure packet injector mode or Raw Tx mode */
+	NRF_WIFI_CMD_RAW_TX_PKT,
+	/** Command to reset interface statistics */ 
+	NRF_WIFI_CMD_RESET_STATISTICS,               
+	/** Command to configure raw tx offloading parameters */
+	NRF_WIFI_CMD_OFFLOAD_RAW_TX_PARAMS,
+	/** Command to enable/disable raw tx offloading */
+	NRF_WIFI_CMD_OFFLOAD_RAW_TX_CTRL,
 };
 
 /**
@@ -175,7 +189,17 @@ enum nrf_wifi_sys_events {
 	/** Response to NRF_WIFI_CMD_UMAC_INT_STATS */
 	NRF_WIFI_EVENT_INT_UMAC_STATS,
 	/** Command status events for radio test commands*/
-	NRF_WIFI_EVENT_RADIOCMD_STATUS
+	NRF_WIFI_EVENT_RADIOCMD_STATUS,
+	/** Response to NRF_WIFI_CMD_CHANNEL */
+	NRF_WIFI_EVENT_CHANNEL_SET_DONE,
+	/** Response to NRF_WIFI_CMD_RAW_CONFIG_MODE */
+	NRF_WIFI_EVENT_MODE_SET_DONE,
+	/** Response to NRF_WIFI_CMD_RAW_CONFIG_FILTER */
+	NRF_WIFI_EVENT_FILTER_SET_DONE,
+	/** Tx done event for the Raw Tx */
+	NRF_WIFI_EVENT_RAW_TX_DONE,
+	/** Command status events for offloaded raw tx commands */
+	NRF_WIFI_EVENT_OFFLOADED_RAWTX_STATUS,
 };
 
 /**
@@ -314,10 +338,10 @@ struct umac_rx_dbg_params {
 	unsigned int null_skb_pointer_from_lmac;
 	/** Number of unexpected management packets received in coalesce event */
 	unsigned int unexpected_mgmt_pkt;
-	/** Unprotected error data frames received in security mode */
-	unsigned int unsecured_data_error;
 	/** Number of packets flushed from reorder buffer before going to sleep */
 	unsigned int reorder_flush_pkt_count;
+	/** Unprotected error data frames received in security mode */
+	unsigned int unsecured_data_error;
 } __NRF_WIFI_PKD;
 
 /**
@@ -495,8 +519,6 @@ struct umac_cmd_evnt_dbg_params {
 	unsigned int CURR_STATE;
 } __NRF_WIFI_PKD;
 
-#ifndef CONFIG_NRF700X_RADIO_TEST
-
 /**
  * @brief This structure specifies the UMAC interface debug parameters used for debugging purpose.
  *
@@ -626,7 +648,6 @@ struct rpu_lmac_stats {
 
 } __NRF_WIFI_PKD;
 
-#endif /* !CONFIG_NRF700X_RADIO_TEST */
 
 /**
  * @brief This structure defines the PHY (Physical Layer) debug statistics.
@@ -728,14 +749,13 @@ struct nrf_wifi_sys_params {
 	unsigned int calib_sleep_clk;
 	/** calib bit map value. More info can be found in phy_rf_params.h NRF_WIFI_DEF_PHY_CALIB */
 	unsigned int phy_calib;
-#ifndef CONFIG_NRF700X_RADIO_TEST
 	/** MAC address of the interface */
 	unsigned char mac_addr[NRF_WIFI_ETH_ADDR_LEN];
 	/** An array containing RF & baseband control params */
 	unsigned char rf_params[NRF_WIFI_RF_PARAMS_SIZE];
 	/** Indicates whether the rf_params has a valid value */
 	unsigned char rf_params_valid;
-#endif /* !CONFIG_NRF700X_RADIO_TEST */
+
 } __NRF_WIFI_PKD;
 
 
@@ -883,12 +903,39 @@ struct nrf_wifi_cmd_sys_init {
 	//struct nrf_wifi_tx_pwr_ctrl_params tx_pwr_ctrl_params;
 	/** Offload mgmt buffer refill to UMAC when enabled */
 	unsigned char mgmt_buff_offload;
-	/** Enable features from driver config */
+	/** To enable features from driver config */
 	unsigned int feature_flags;
 	/** To deactivate beamforming, By default the RPU enables the beamforming feature.
 	 *  If a user wishes to turn it off, they should set this parameter to 1.
 	 */
 	unsigned int disable_beamforming;
+	/** The RPU uses this value (in seconds) to decide how long to wait 
+	 *  without receiving beacons before disconnection.
+	 */
+	unsigned int discon_timeout;
+	/** RPU uses QoS null frame or PS-Poll frame to retrieve buffered frames
+	 * from the AP in power save @ref ps_exit_strategy.
+	 */
+	unsigned char ps_exit_strategy;
+	/** The RPU uses this value to configure watchdog timer */
+	unsigned int watchdog_timer_val;
+	/** The RPU uses this value to decide whether keep alive
+	 *  feature is enabled or not see enum keep_alive_status
+	 */
+	unsigned char keep_alive_enable;
+	/** The RPU uses this value(in seconds) for periodicity of the keep
+	 *  alive frame.
+	 */
+	unsigned int keep_alive_period;
+	/** The RPU uses this value to define the limit on display scan BSS entries.
+	 *  By default, the limit is set to 250 in scan-only mode and 150 in regular mode.
+	 *  If this value is greater than 0, it overrides the default limits.
+	 */
+	unsigned int display_scan_bss_limit;
+	/** The RPU uses this value to enable/disable priority window for Wi-Fi scan 
+	 *  in the case of coexistence with Short Range radio.
+	 */
+	unsigned int coex_disable_ptiwin_for_wifi_scan;
 } __NRF_WIFI_PKD;
 
 /**
@@ -1119,6 +1166,277 @@ struct nrf_wifi_cmd_get_stats {
 } __NRF_WIFI_PKD;
 
 /**
+ * @brief This structure represents the channel parameters to configure specific channel.
+ *
+ */
+struct nrf_wifi_cmd_set_channel {
+	/** UMAC header, @ref nrf_wifi_sys_head*/
+	struct nrf_wifi_sys_head sys_head;
+    /* Interface index  */
+    unsigned char if_index;
+	/** channel parameters, @ref chan_params*/
+	struct chan_params chan;
+} __NRF_WIFI_PKD;
+
+enum wifi_operation_modes {
+        /** STA mode setting enable */
+       	NRF_WIFI_STA_MODE = 0x1,
+        /** Monitor mode setting enable */
+        NRF_WIFI_MONITOR_MODE = 0x2,
+        /** TX injection mode setting enable */
+        NRF_WIFI_TX_INJECTION_MODE = 0x4,
+        /** Promiscuous mode setting enable */
+        NRF_WIFI_PROMISCUOUS_MODE = 0x8,
+        /** AP mode setting enable */
+        NRF_WIFI_AP_MODE = 0x10,
+        /** STA-AP mode setting enable */
+        NRF_WIFI_STA_AP_MODE = 0x20,
+        /** Max limit check based on current modes supported*/
+        //WIFI_MODE_LIMIT_CHK = x02f,
+};
+
+/** Mode filter settings */
+enum wifi_packet_filter {
+        /** Support management, data and control packet sniffing */
+        NRF_WIFI_PACKET_FILTER_ALL = 0x1,
+        /** Support only sniffing of management packets */
+        NRF_WIFI_PACKET_FILTER_MGMT = 0x2,
+        /** Support only sniffing of data packets */
+        NRF_WIFI_PACKET_FILTER_DATA = 0x4,
+        /** Support only sniffing of control packets */
+        NRF_WIFI_PACKET_FILTER_CTRL = 0x8,
+};
+/**
+ * @brief This structure defines the command used to configure 
+ *  promiscuous mode/Monitor mode/Packet injector mode.
+ *
+ */
+struct nrf_wifi_cmd_raw_config_mode {
+	/** UMAC header, @ref nrf_wifi_sys_head */
+	struct nrf_wifi_sys_head sys_head;
+    /* Interface index  */
+    unsigned char if_index;
+	/* Wireless device operating mode */
+	unsigned char op_mode;
+} __NRF_WIFI_PKD;
+
+struct nrf_wifi_cmd_raw_config_filter {
+	/** UMAC header, @ref nrf_wifi_sys_head */
+	struct nrf_wifi_sys_head sys_head;
+    /* VIF index  */
+    unsigned char if_index;
+	/* Wireless device operating mode filters for Promiscuous/Monitor modes */
+	unsigned char filter;
+	/* capture length */
+	unsigned short capture_len;
+} __NRF_WIFI_PKD;
+
+/**
+ * @brief This enum represents the queues used to segregate the TX frames depending on
+ * their QoS categories. A separate queue is used for Beacon frames / frames
+ * transmitted during DTIM intervals.
+ */
+
+enum UMAC_QUEUE_NUM {
+    /* Queue for frames belonging to the "Background" Access Category */
+	UMAC_AC_BK = 0,
+    /* Queue for frames belonging to the "Best-Effort" Access Category */
+	UMAC_AC_BE,
+    /* Queue for frames belonging to the "Video" Access Category */
+	UMAC_AC_VI,
+    /* Queue for frames belonging to the "Voice" Access Category */
+	UMAC_AC_VO,
+    /* Queue for frames belonging to the "Beacon" Access Category */
+	UMAC_AC_BCN,
+    /* Maximum number of transmit queues supported */
+	UMAC_AC_MAX_CNT
+};
+
+/**
+ * @brief This structure defines the raw tx parameters used in packet injector mode.
+ *
+ */
+struct nrf_wifi_raw_tx_pkt {
+	/* Queue number will be BK, BE, VI, VO and BCN refer @enum UMAC_QUEUE_NUM */
+	unsigned char queue_num;
+	/* Descriptor identifier or token identifier */
+	unsigned char desc_num;
+	/* Packet lengths of frames */
+	unsigned short pkt_length;
+	/* Number of times a packet should be transmitted at each possible rate */
+	unsigned char rate_retries;
+	/** refer see &enum rpu_tput_mode */
+	unsigned char rate_flags;
+	 /* rate: legacy rates: 1,2,55,11,6,9,12,18,24,36,48,54
+	 *		  11N VHT HE  : MCS index 0 to 7.
+     */
+	unsigned char rate;
+	/* Starting Physical address of each frame in Ext-RAM after dma_mapping */
+	unsigned int  frame_ddr_pointer;
+} __NRF_WIFI_PKD;
+
+/**
+ * @brief This structure defines the command used to configure packet injector mode.
+ *
+ */
+struct nrf_wifi_cmd_raw_tx {
+	/** UMAC header, @ref nrf_wifi_sys_head */
+	struct nrf_wifi_sys_head sys_head;
+    /* Interface index  */
+    unsigned char if_index;
+	/* Raw tx packet information */
+	struct nrf_wifi_raw_tx_pkt  raw_tx_info;
+} __NRF_WIFI_PKD;
+
+/**
+ * @brief This enum provides a list of different raw tx offloading types.
+ */
+enum nrf_wifi_offload_rawtx_ctrl_type {
+	NRF_WIFI_OFFLOAD_TX_STOP,
+	NRF_WIFI_OFFLOAD_TX_START,
+	NRF_WIFI_OFFLOAD_TX_CONFIG,
+};
+
+/**
+ * @brief This structure defines the offloaded raw tx control information.
+ *
+ */
+struct nrf_wifi_offload_ctrl_params
+{
+	/** Time interval in micro seconds */
+	unsigned int period_in_us;
+	/** Transmit power in dBm ( 0 to 20) */
+	int tx_pwr;
+	/** channel parameters, @ref chan_params*/
+	struct chan_params chan;
+} __NRF_WIFI_PKD;
+
+#define NRF_WIFI_ENABLE_HE_SU 0x40
+#define NRF_WIFI_ENABLE_HE_ER_SU 0x80
+
+/**
+ * @brief This structure defines the offloading raw tx parameters
+ *
+ */
+struct nrf_wifi_offload_tx_ctrl
+{
+	/** Packet lengths of frames, min 26 bytes and max 600 bytes */
+	unsigned int pkt_length;
+	/** Rate preamble type (USE_SHORT_PREAMBLE/DONT_USE_SHORT_PREAMBLE) */
+	unsigned int rate_preamble_type;
+	/* Number of times a packet should be transmitted at each possible rate */
+	unsigned int rate_retries;
+	/* Rate: legacy rates: 1,2,55,11,6,9,12,18,24,36,48,54
+	 * 	 	 11N VHT HE: MCS index 0 to 7.
+	 */
+	unsigned int rate;
+	/** Refer see &enum rpu_tput_mode */
+	unsigned int rate_flags;
+	/** HE GI type (NRF_WIFI_HE_GI_800NS/NRF_WIFI_HE_GI_1600NS/NRF_WIFI_HE_GI_3200NS) */
+	unsigned char he_gi_type;
+	/** HE LTF (NRF_WIFI_HE_LTF_3200NS/NRF_WIFI_HE_LTF_6400NS/NRF_WIFI_HE_LTF_12800NS) */
+	unsigned char he_ltf;
+	/* Payload pointer*/
+	unsigned int  pkt_ram_ptr;
+} __NRF_WIFI_PKD;
+
+/**
+ * @brief This structure defines the command used for  offloading Raw tx
+ *
+ */
+struct nrf_wifi_cmd_offload_raw_tx_params {
+	/** UMAC header, @ref nrf_wifi_sys_head */
+	struct nrf_wifi_sys_head sys_head;
+	/** Id of the interface */
+	unsigned int wdev_id;
+	/** Offloaded raw tx control information. @ref nrf_wifi_offload_ctrl_params */
+	struct nrf_wifi_offload_ctrl_params ctrl_info;
+	/** Offloaded raw tx params. @ref nrf_wifi_offload_tx_ctrl */
+	struct nrf_wifi_offload_tx_ctrl tx_params;
+} __NRF_WIFI_PKD;
+
+/**
+ * @brief This structure defines the command used for  offloading Raw tx
+ *
+ */
+struct nrf_wifi_cmd_offload_raw_tx_ctrl {
+	/** UMAC header, @ref nrf_wifi_sys_head */
+	struct nrf_wifi_sys_head sys_head;
+	/** Id of the interface */
+	unsigned int wdev_id;
+	/** Offloading type &enum nrf_wifi_offload_rawtx_ctrl_type */
+	unsigned char ctrl_type;
+} __NRF_WIFI_PKD;
+
+/**
+ * @brief This structure defines an event that indicates set channel command done.
+ *
+ */
+struct nrf_wifi_event_set_channel {
+	/** UMAC header, @ref nrf_wifi_sys_head */
+	struct nrf_wifi_sys_head sys_head;
+	/* Interface index  */
+	unsigned char if_index;
+	/** channel parameters, @ref chan_params*/
+	struct chan_params chan;
+	/** status of the set channel command, success(0)/Fail(1) */
+	int status;
+} __NRF_WIFI_PKD;
+
+/**
+ * @brief This structure defines an event that indicates set raw config 
+ * mode command done.
+ *
+ */
+struct nrf_wifi_event_raw_config_mode {
+	/** UMAC header, @ref nrf_wifi_sys_head */
+	struct nrf_wifi_sys_head sys_head;
+	/* Interface index  */
+	unsigned char if_index;	
+	/* OPerating mode  */
+	unsigned char op_mode;
+	/** status of the set raw config mode command, success(0)/Fail(1) */
+	int status;
+} __NRF_WIFI_PKD;
+
+/**
+ * @brief This structure defines an event that indicates set raw config 
+ * filter command done.
+ *
+ */
+struct nrf_wifi_event_raw_config_filter {
+	/** UMAC header, @ref nrf_wifi_sys_head */
+	struct nrf_wifi_sys_head sys_head;
+	/* Interface index  */
+	unsigned char if_index;	
+	/* mode filter configured */
+	unsigned char filter;
+	/* capture len configured  */
+	unsigned short capture_len;
+	/** status of the set raw filter command, success(0)/Fail(1) */
+	int status;
+} __NRF_WIFI_PKD;
+
+/**
+ * @brief This structure defines an event that indicates the Raw tx done.
+ *
+ */
+struct nrf_wifi_event_raw_tx_done {
+	/** UMAC header, @ref nrf_wifi_sys_head */
+	struct nrf_wifi_sys_head sys_head;
+	/* descriptor number */
+	unsigned char desc_num;
+	/** status of the raw tx packet command, success(0)/Fail(1) */
+	int status;
+} __NRF_WIFI_PKD;
+/**
+ * struct nrf_wifi_cmd_clear_stats - clear statistics
+ * @sys_head: UMAC header, See &struct nrf_wifi_sys_head.
+ * @stats_type: Type of statistics to clear see &enum rpu_stats_type
+ *
+ * This command is to clear the statistics corresponding to stats_type selected
+ */
+/**
  * @brief This structure defines the command used to clear or reset statistics.
  *
  *
@@ -1296,6 +1614,18 @@ struct nrf_wifi_event_pwr_data {
 } __NRF_WIFI_PKD;
 
 /**
+ * @brief This structure defines the Offloaded raw tx debug statistics.
+ *
+ */
+struct rpu_offloaded_raw_tx_stats {
+      unsigned int offload_raw_tx_state;
+      unsigned int offload_raw_tx_cnt;
+      unsigned int offload_raw_tx_complete_cnt;
+      unsigned int warm_boot_cnt;
+} __NRF_WIFI_PKD;
+
+
+/**
  * @brief This structure is a comprehensive combination of all the firmware statistics
  *  that the RPU (Radio Processing Unit) can provide.
  *
@@ -1303,12 +1633,12 @@ struct nrf_wifi_event_pwr_data {
 struct rpu_fw_stats {
 	/** PHY statistics  @ref rpu_phy_stats */
 	struct rpu_phy_stats phy;
-#ifndef CONFIG_NRF700X_RADIO_TEST
 	/** LMAC statistics @ref rpu_lmac_stats */
 	struct rpu_lmac_stats lmac;
 	/** UMAC statistics @ref rpu_umac_stats */
 	struct rpu_umac_stats umac;
-#endif /* !CONFIG_NRF700X_RADIO_TEST */
+	/** Raw Offloading statistics @ref rpu_offloaded_raw_tx_stats */
+    struct rpu_offloaded_raw_tx_stats offloaded_raw_tx;
 } __NRF_WIFI_PKD;
 
 /**
@@ -1334,7 +1664,9 @@ enum nrf_wifi_radio_test_err_status {
 	/** Command success  */
 	NRF_WIFI_UMAC_CMD_SUCCESS = 1,
 	/** Invalid channel error */
-	NRF_WIFI_UMAC_INVALID_CHNL
+	NRF_WIFI_UMAC_INVALID_CHNL,
+    /** Invalid power error */
+    NRF_WIFI_UMAC_INVALID_TXPWR
 };
 
 /**
@@ -1349,11 +1681,13 @@ struct nrf_wifi_umac_event_err_status {
 	unsigned int status;
 } __NRF_WIFI_PKD;
 
+
 /**
- * @brief This structure represents the UMAC initialization done event.
- *  The event is sent by the RPU (Radio Processing Unit) in response to
- *  the NRF_WIFI_CMD_INIT command, indicating that the RPU initialization
- *  process has been completed successfully.
+ * struct nrf_wifi_event_init_done - UMAC initialization done
+ * @sys_head: UMAC header, See &struct nrf_wifi_sys_head.
+ *
+ * RPU sends this event in response to NRF_WIFI_CMD_INIT indicating that the RPU is
+ * initialized
  */
 
 struct nrf_wifi_event_init_done {
