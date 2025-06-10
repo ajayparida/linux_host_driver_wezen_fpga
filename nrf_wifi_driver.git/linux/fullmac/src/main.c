@@ -62,7 +62,7 @@ unsigned char wmm = 1;
 unsigned char max_num_tx_agg_sessions = 4;
 unsigned char max_num_rx_agg_sessions = 8;
 //unsigned char max_num_rx_agg_sessions = 0;
-unsigned char reorder_buf_size = 32;
+unsigned char reorder_buf_size = 8;
 unsigned char max_rxampdu_size = MAX_RX_AMPDU_SIZE_64KB;
 
 #ifdef OFFLINE_MODE
