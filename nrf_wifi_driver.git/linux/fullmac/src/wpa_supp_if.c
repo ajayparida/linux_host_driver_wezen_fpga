@@ -470,20 +470,33 @@ static void wpa_supp_if_process_cmd(void *cmd,
 	if (umac_hdr->cmd_evnt == NRF_WIFI_UMAC_CMD_NEW_KEY) {
 		key_cmd = (struct nrf_wifi_umac_cmd_key *)cmd;
 
-		status = nrf_wifi_fmac_add_key(rpu_ctx_lnx->rpu_ctx,
-					       key_cmd->umac_hdr.ids.wdev_id,
-					       &key_cmd->key_info,
-					       key_cmd->mac_addr);
-
+		if (is_zero_ether_addr(key_cmd->mac_addr)) {
+			status = nrf_wifi_fmac_add_key(rpu_ctx_lnx->rpu_ctx,
+						       key_cmd->umac_hdr.ids.wdev_id,
+						       &key_cmd->key_info,
+						       NULL);
+		} else {
+			status = nrf_wifi_fmac_add_key(rpu_ctx_lnx->rpu_ctx,
+						       key_cmd->umac_hdr.ids.wdev_id,
+						       &key_cmd->key_info,
+						       key_cmd->mac_addr);
+		}
 		if (status == NRF_WIFI_STATUS_FAIL)
 			pr_err("%s: nrf_wifi_fmac_add_key failed\n", __func__);
 	} else if (umac_hdr->cmd_evnt == NRF_WIFI_UMAC_CMD_DEL_KEY) {
 		key_cmd = (struct nrf_wifi_umac_cmd_key *)cmd;
 
-		status = nrf_wifi_fmac_del_key(rpu_ctx_lnx->rpu_ctx,
-					       key_cmd->umac_hdr.ids.wdev_id,
-					       &key_cmd->key_info,
-					       key_cmd->mac_addr);
+		if (is_zero_ether_addr(key_cmd->mac_addr)) {
+			status = nrf_wifi_fmac_del_key(rpu_ctx_lnx->rpu_ctx,
+						       key_cmd->umac_hdr.ids.wdev_id,
+						       &key_cmd->key_info,
+						       NULL);
+		} else {
+			status = nrf_wifi_fmac_del_key(rpu_ctx_lnx->rpu_ctx,
+						       key_cmd->umac_hdr.ids.wdev_id,
+						       &key_cmd->key_info,
+						       key_cmd->mac_addr);
+		}
 
 		if (status == NRF_WIFI_STATUS_FAIL)
 			pr_err("%s: nrf_wifi_fmac_del_key failed\n", __func__);

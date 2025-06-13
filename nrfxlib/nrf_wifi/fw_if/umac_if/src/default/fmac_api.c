@@ -1063,6 +1063,7 @@ static bool findValidPeerDBIndex(struct nrf_wifi_fmac_dev_ctx *dev_ctx,
 	def_dev_ctx = wifi_dev_priv(fmac_dev_ctx);
 	vif_ctx = def_dev_ctx->vif_ctx[if_idx];
 	peerKeyDB = &def_dev_ctx->peerKeyDB[0];
+
 	if (peer_key->key_type == NRF_WIFI_KEYTYPE_PAIRWISE) {
                 for (i = 0; i < MAX_PEERS; i++) {
                         if (nrf_wifi_util_ether_addr_equal(vif_ctx->mac_addr,
@@ -1114,7 +1115,7 @@ static bool findValidPeerDBIndex(struct nrf_wifi_fmac_dev_ctx *dev_ctx,
 						vif_ctx->bssid, NRF_WIFI_ETH_ADDR_LEN);
 				nrf_wifi_osal_mem_cpy(fmac_dev_ctx->fpriv->opriv,
 						(peerKeyDB + freeDB)->vifMacAddr,
-						mac_addr, NRF_WIFI_ETH_ADDR_LEN);
+						vif_ctx->mac_addr, NRF_WIFI_ETH_ADDR_LEN);
                                 (peerKeyDB + freeDB)->keyValid = KEY_VALID;
                         }
                         if (peerKeyDbFound)
