@@ -17,9 +17,6 @@
 #endif
 #endif
 
-#ifdef TWT_SUPPORT
-int twt_setup_event;
-#endif
 extern struct nrf_wifi_drv_priv_lnx rpu_drv_priv;
 
 #ifndef CONFIG_NRF700X_RADIO_TEST
