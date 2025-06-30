@@ -248,7 +248,7 @@ retry_twt:
 		tok_s = strstr(conf_buf, " flow_id=");
 		if (tok_s) {
 			param_get_val(tok_s, "flow_id=", &val);
-			if (val == rpu_ctx_lnx->twt_params.twt_cmd.twt_flow_id) {
+			if (val == rpu_ctx_lnx->twt_params.twt_event.twt_flow_id) {
 
 				twt_teardown_cmd = kzalloc(sizeof(*twt_teardown_cmd), GFP_KERNEL);
 				if (!twt_teardown_cmd) {
@@ -258,6 +258,7 @@ retry_twt:
 				twt_teardown_cmd->umac_hdr.cmd_evnt = NRF_WIFI_UMAC_CMD_TEARDOWN_TWT;
 				twt_teardown_cmd->umac_hdr.ids.wdev_id = 0;
 				twt_teardown_cmd->umac_hdr.ids.valid_fields |= NRF_WIFI_INDEX_IDS_WDEV_ID_VALID;
+				twt_teardown_cmd->info.twt_flow_id = val;
 
 				status = umac_cmd_cfg(fmac_ctx,
 						      twt_teardown_cmd,
