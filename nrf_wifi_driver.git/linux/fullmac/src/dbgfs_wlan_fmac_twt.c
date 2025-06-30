@@ -248,7 +248,7 @@ retry_twt:
 		tok_s = strstr(conf_buf, " flow_id=");
 		if (tok_s) {
 			param_get_val(tok_s, "flow_id=", &val);
-			if (val == rpu_ctx_lnx->twt_params.twt_cmd.twt_flow_id) {
+			if (val == rpu_ctx_lnx->twt_params.twt_event.twt_flow_id) {
 
 				twt_teardown_cmd = kzalloc(sizeof(*twt_teardown_cmd), GFP_KERNEL);
 				if (!twt_teardown_cmd) {
