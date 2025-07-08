@@ -12,7 +12,7 @@
 #ifndef __OSAL_STRUCTS_H__
 #define __OSAL_STRUCTS_H__
 
-#include <stddef.h>
+#include <linux/types.h>
 
 /**
  * enum nrf_wifi_status - The status of an operation performed by the

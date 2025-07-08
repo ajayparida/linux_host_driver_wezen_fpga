@@ -12,8 +12,24 @@
 #ifndef __UTIL_H__
 #define __UTIL_H__
 
-#include <stddef.h>
+#include <linux/types.h>
+
+#ifdef __KERNEL__
+/* Kernel-space boolean definitions */
+#ifndef bool
+#define bool _Bool
+#endif
+#ifndef true
+#define true 1
+#endif
+#ifndef false
+#define false 0
+#endif
+#else
+/* User-space boolean definitions */
 #include <stdbool.h>
+#endif
+
 #include "osal_api.h"
 #include "host_rpu_umac_if.h"
 

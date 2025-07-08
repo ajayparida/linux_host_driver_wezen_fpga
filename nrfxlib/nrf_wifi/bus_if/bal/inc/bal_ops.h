@@ -12,8 +12,7 @@
 #ifndef __BAL_OPS_H__
 #define __BAL_OPS_H__
 
-#include <stdbool.h>
-
+#include <linux/types.h>
 /**
  * struct nrf_wifi_bal_ops - Ops to be provided by a particular bus
  *                           implementation.

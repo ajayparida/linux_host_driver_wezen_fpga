@@ -5,14 +5,17 @@
  */
 
 /**
- * @brief Header containing utility declarations for the
+ * @brief Header containing utility function declarations for the
  * FMAC IF Layer of the Wi-Fi driver.
  */
+
 #ifndef __FMAC_UTIL_H__
 #define __FMAC_UTIL_H__
 
+#include <linux/types.h>
+
+
 #ifndef CONFIG_NRF700X_RADIO_TEST
-#include <stdbool.h>
 #include "fmac_structs.h"
 #include "pack_def.h"
 

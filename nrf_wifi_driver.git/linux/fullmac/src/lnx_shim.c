@@ -85,8 +85,9 @@ static void lnx_shim_iomem_unmap(volatile void *addr)
 static void * lnx_shim_iomem_mmap_inline_rx(unsigned long addr, unsigned long size)
 {
         if (request_mem_region(HOST_PKTRAM_BB_START, HOST_PKTRAM_BB_LEN,  "host_rpu_ram")) {
-		return ioremap_nocache(HOST_PKTRAM_BB_START, HOST_PKTRAM_BB_LEN);
+		return ioremap(HOST_PKTRAM_BB_START, HOST_PKTRAM_BB_LEN);
         }
+        return NULL;
 }
 static void lnx_shim_iomem_unmap_inline_rx(volatile void *addr)
 {

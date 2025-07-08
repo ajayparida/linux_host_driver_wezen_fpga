@@ -9,11 +9,12 @@
  * HAL Layer of the Wi-Fi driver.
  */
 
-
 #ifndef __HAL_API_H__
 #define __HAL_API_H__
 
-#include <stdbool.h>
+#include <linux/types.h>
+
+
 #include "osal_api.h"
 #include "rpu_if.h"
 #include "bal_api.h"

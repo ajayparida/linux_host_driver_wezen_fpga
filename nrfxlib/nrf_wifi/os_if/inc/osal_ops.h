@@ -12,7 +12,8 @@
 #ifndef __OSAL_OPS_H__
 #define __OSAL_OPS_H__
 
-#include <stdarg.h>
+#include <linux/types.h>
+#include "osal_api.h"
 #include "osal_structs.h"
 
 

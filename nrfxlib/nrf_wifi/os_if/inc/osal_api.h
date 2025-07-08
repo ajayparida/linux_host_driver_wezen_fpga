@@ -12,7 +12,25 @@
 #ifndef __OSAL_API_H__
 #define __OSAL_API_H__
 
+#ifdef __KERNEL__
+/* Kernel-space stdarg definitions */
+#ifndef va_list
+#define va_list __builtin_va_list
+#endif
+#ifndef va_start
+#define va_start(v,l) __builtin_va_start(v,l)
+#endif
+#ifndef va_end
+#define va_end(v) __builtin_va_end(v)
+#endif
+#ifndef va_arg
+#define va_arg(v,l) __builtin_va_arg(v,l)
+#endif
+#else
+/* User-space stdarg definitions */
 #include <stdarg.h>
+#endif
+
 #include "osal_structs.h"
 
 /* Have to match zephyr/include/zephyr/logging/log_core.h */
@@ -435,7 +453,7 @@ void *nrf_wifi_osal_llist_node_data_get(struct nrf_wifi_osal_priv *opriv,
  *
  * Stores the pointer to the data(@data) in a linked list node(@node).
  *
- *
+
  * Return: None.
  */
 void nrf_wifi_osal_llist_node_data_set(struct nrf_wifi_osal_priv *opriv,

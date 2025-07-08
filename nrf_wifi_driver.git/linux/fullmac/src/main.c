@@ -11,6 +11,7 @@
 #include <linux/rtnetlink.h>
 #include <linux/module.h>
 #include <linux/mod_devicetable.h>
+#include <linux/vmalloc.h>
 #ifdef BUS_IF_PCIE
 #include <pcie.h>
 #endif
@@ -301,7 +302,7 @@ enum nrf_wifi_status nrf_wifi_fmac_fw_get_lnx(struct nrf_wifi_fmac_dev_ctx *fmac
 #endif /* FW_PATCH_INBUILT */
 
 	//fw_info->data = kzalloc(fw_data_size, GFP_KERNEL);
-	fw_info->data = vmalloc(fw_data_size);
+	fw_info->data = (const void *)vmalloc(fw_data_size);
 
 	if(!fw_info->data) {
 		pr_err("%s: Unable to allocate memory\n",
@@ -310,7 +311,7 @@ enum nrf_wifi_status nrf_wifi_fmac_fw_get_lnx(struct nrf_wifi_fmac_dev_ctx *fmac
 		goto out;
 	}
 
-	memcpy(fw_info->data,
+	memcpy((void *)fw_info->data,
 	       fw_data,
 	       fw_data_size);
 
@@ -328,7 +329,7 @@ void nrf_wifi_lnx_wlan_fw_rel(struct nrf_wifi_fw_info *fw_info)
 {
 	if (fw_info->data)
 //		kfree(fw_info->data);
-		vfree(fw_info->data);		
+		vfree((void *)fw_info->data);		
 
 	fw_info->data = 0;
 }
@@ -767,8 +768,7 @@ void configure_tx_pwr_settings(
         tx_pwr_ctrl_params->band_edge_5g_unii_4_hi =
                 CONFIG_NRF700X_BAND_UNII_4_UPPER_EDGE_BACKOFF;
 
-#if defined(CONFIG_BOARD_NRF7002DK_NRF7001_NRF5340_CPUAPP) || \
-        defined(CONFIG_BOARD_NRF7002DK_NRF5340_CPUAPP) ||     \
+#if defined(CONFIG_BOARD_NRF7002DK_NRF5340_CPUAPP) || \
         defined(CONFIG_BOARD_NRF5340DK_NRF5340_CPUAPP)
         set_tx_pwr_ceil_default(tx_pwr_ceil_params);
 #if DT_NODE_HAS_PROP(DT_NODELABEL(nrf70_tx_power_ceiling), max_pwr_2g_dsss)

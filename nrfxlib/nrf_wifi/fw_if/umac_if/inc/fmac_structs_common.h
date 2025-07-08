@@ -16,7 +16,8 @@
 #ifndef __FMAC_STRUCTS_COMMON_H__
 #define __FMAC_STRUCTS_COMMON_H__
 
-#include <stdbool.h>
+#include <linux/types.h>
+
 
 #include "osal_api.h"
 #include "host_rpu_umac_if.h"
