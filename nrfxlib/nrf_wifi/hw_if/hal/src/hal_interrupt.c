@@ -698,7 +698,7 @@ enum nrf_wifi_status hal_rpu_irq_process(struct nrf_wifi_hal_dev_ctx *hal_dev_ct
 	 * scenarios and has to be taken care by the SOC designers.
 	 */
 	num_events = hal_rpu_event_get_all(hal_dev_ctx);
-
+#ifdef notyet
 	/* If we received an interrupt without any associated event(s) it is a
 	 * likely indication that the RPU is stuck and this interrupt has been
 	 * raised by the watchdog
@@ -722,6 +722,7 @@ enum nrf_wifi_status hal_rpu_irq_process(struct nrf_wifi_hal_dev_ctx *hal_dev_ct
 			}
 		}
 	}
+#endif
 
 out:
 	return status;
