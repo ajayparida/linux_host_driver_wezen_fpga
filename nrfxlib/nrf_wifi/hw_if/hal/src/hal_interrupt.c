@@ -672,6 +672,19 @@ enum nrf_wifi_status hal_rpu_irq_process(struct nrf_wifi_hal_dev_ctx *hal_dev_ct
 	enum nrf_wifi_status status = NRF_WIFI_STATUS_FAIL;
 	unsigned int num_events = 0;
 
+	/* We had an issue in fpga setup where even before host completes
+	 * reading of the all the events firmware was pushing an event.
+	 * So handle this acking the irq first and then processing teh events.
+	 */
+	
+	status = hal_rpu_irq_ack(hal_dev_ctx);
+
+	if (status == NRF_WIFI_STATUS_FAIL) {
+		nrf_wifi_osal_log_err(hal_dev_ctx->hpriv->opriv,
+				      "%s: hal_rpu_irq_ack failed\n",
+				      __func__);
+		goto out;
+	}
 
 	/* Get all the events in the queue. It is possible that there are no
 	 * events in the queue. This is a valid scenario as per our present
@@ -710,14 +723,6 @@ enum nrf_wifi_status hal_rpu_irq_process(struct nrf_wifi_hal_dev_ctx *hal_dev_ct
 		}
 	}
 
-	status = hal_rpu_irq_ack(hal_dev_ctx);
-
-	if (status == NRF_WIFI_STATUS_FAIL) {
-		nrf_wifi_osal_log_err(hal_dev_ctx->hpriv->opriv,
-				      "%s: hal_rpu_irq_ack failed\n",
-				      __func__);
-		goto out;
-	}
 out:
 	return status;
 }
