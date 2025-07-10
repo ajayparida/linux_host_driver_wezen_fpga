@@ -1506,6 +1506,7 @@ int __init nrf_wifi_init_lnx(void)
 	callbk_fns.event_get_reg = &nrf_wifi_wpa_supp_get_reg_callbk_fn;
 	callbk_fns.set_if_callbk_fn = &nrf_wifi_wpa_supp_set_if_callbk_fn;
 	callbk_fns.disp_scan_res_callbk_fn = &nrf_wifi_wpa_supp_disp_scan_res_callbk_fn;
+	callbk_fns.mgmt_tx_status = &nrf_wifi_wpa_supp_tx_status_callbk_fn;
 #endif /* HOST_CFG80211_SUPPORT */
 
 
