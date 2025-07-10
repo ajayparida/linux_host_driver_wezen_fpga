@@ -247,6 +247,30 @@ static enum nrf_wifi_status umac_event_ctrl_process(struct nrf_wifi_fmac_dev_ctx
 
 		vif_ctx->ifflags = true;
 		break;
+#if defined(CONFIG_NRF700X_STA_MODE) || defined(CONFIG_NRF700X_AP_MODE)
+	case NRF_WIFI_UMAC_EVENT_FRAME:
+		if (callbk_fns->mgmt_rx_callbk_fn)
+			callbk_fns->mgmt_rx_callbk_fn(vif_ctx->os_vif_ctx,
+						      event_data,
+						      event_len);
+		else
+			nrf_wifi_osal_log_err(fmac_dev_ctx->fpriv->opriv,
+					      "%s: No callback registered for event %d\n",
+					      __func__,
+					      umac_hdr->cmd_evnt);
+		break;
+	case NRF_WIFI_UMAC_EVENT_FRAME_TX_STATUS:
+		if (callbk_fns->mgmt_tx_status)
+			callbk_fns->mgmt_tx_status(vif_ctx->os_vif_ctx,
+						   event_data,
+						   event_len);
+		else
+			nrf_wifi_osal_log_err(fmac_dev_ctx->fpriv->opriv,
+					      "%s: No callback registered for event %d\n",
+					      __func__,
+					      umac_hdr->cmd_evnt);
+		break;
+#endif
 #ifdef CONFIG_NRF700X_STA_MODE
 	case NRF_WIFI_UMAC_EVENT_TWT_SLEEP:
 		if (callbk_fns->twt_sleep_callbk_fn)
@@ -318,17 +342,6 @@ static enum nrf_wifi_status umac_event_ctrl_process(struct nrf_wifi_fmac_dev_ctx
 					      __func__,
 					      umac_hdr->cmd_evnt);
 		break;
-	case NRF_WIFI_UMAC_EVENT_FRAME:
-		if (callbk_fns->mgmt_rx_callbk_fn)
-			callbk_fns->mgmt_rx_callbk_fn(vif_ctx->os_vif_ctx,
-						      event_data,
-						      event_len);
-		else
-			nrf_wifi_osal_log_err(fmac_dev_ctx->fpriv->opriv,
-					      "%s: No callback registered for event %d\n",
-					      __func__,
-					      umac_hdr->cmd_evnt);
-		break;
 	case NRF_WIFI_UMAC_EVENT_GET_TX_POWER:
 		if (callbk_fns->tx_pwr_get_callbk_fn)
 			callbk_fns->tx_pwr_get_callbk_fn(vif_ctx->os_vif_ctx,
@@ -378,17 +391,6 @@ static enum nrf_wifi_status umac_event_ctrl_process(struct nrf_wifi_fmac_dev_ctx
 			callbk_fns->cookie_rsp_callbk_fn(vif_ctx->os_vif_ctx,
 							 event_data,
 							 event_len);
-		else
-			nrf_wifi_osal_log_err(fmac_dev_ctx->fpriv->opriv,
-					      "%s: No callback registered for event %d\n",
-					      __func__,
-					      umac_hdr->cmd_evnt);
-		break;
-	case NRF_WIFI_UMAC_EVENT_FRAME_TX_STATUS:
-		if (callbk_fns->mgmt_tx_status)
-			callbk_fns->mgmt_tx_status(vif_ctx->os_vif_ctx,
-							event_data,
-							event_len);
 		else
 			nrf_wifi_osal_log_err(fmac_dev_ctx->fpriv->opriv,
 					      "%s: No callback registered for event %d\n",

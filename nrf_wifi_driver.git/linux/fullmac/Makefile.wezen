@@ -89,7 +89,8 @@ ccflags-y += -DCONFIG_NRF700X_MAX_TX_TOKENS=12 \
 
 ifneq ($(MODE), RADIO-TEST)
 ccflags-y += -DCONFIG_NRF700X_DATA_TX \
-	     -DCONFIG_NRF700X_STA_MODE
+	     -DCONFIG_NRF700X_STA_MODE \
+	     -DCONFIG_NRF700X_AP_MODE
 endif	 
 
 ifneq ($(FW_LOAD), NONE)
