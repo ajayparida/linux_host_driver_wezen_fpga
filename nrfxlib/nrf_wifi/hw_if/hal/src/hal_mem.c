@@ -358,7 +358,7 @@ static enum nrf_wifi_status rpu_mem_write_code_ram(struct nrf_wifi_hal_dev_ctx *
 		goto out;
 	}
 
-        status = pal_rpu_addr_offset_get(hal_dev_ctx->hpriv->opriv,
+	status = pal_rpu_addr_offset_get(hal_dev_ctx->hpriv->opriv,
                                          code_ram_addr_val,
                                          &addr_offset,
                                          hal_dev_ctx->curr_proc);
@@ -394,13 +394,6 @@ static enum nrf_wifi_status rpu_mem_write_data_ram(struct nrf_wifi_hal_dev_ctx *
 {
 	enum nrf_wifi_status status = NRF_WIFI_STATUS_FAIL;
         unsigned long addr_offset = 0;
-
-	if (data_ram_addr_val % 4 != 0) {
-		nrf_wifi_osal_log_err(hal_dev_ctx->hpriv->opriv,
-				      "%s: Address not multiple of 4 bytes\n",
-				      __func__);
-		goto out;
-	}
 
         status = pal_rpu_addr_offset_get(hal_dev_ctx->hpriv->opriv,
                                          data_ram_addr_val,
