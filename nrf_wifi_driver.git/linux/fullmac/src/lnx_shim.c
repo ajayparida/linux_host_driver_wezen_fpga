@@ -494,7 +494,11 @@ static void lnx_shim_tasklet_kill(void *tasklet)
 
 static int lnx_shim_msleep(int msecs)
 {
-	msleep((unsigned int)msecs);
+	if (msecs > 20)
+		msleep((unsigned int)msecs);
+	else
+		usleep_range((msecs * 1000),
+			     (msecs * 1000 + 500));
 
 	return 0;
 }
