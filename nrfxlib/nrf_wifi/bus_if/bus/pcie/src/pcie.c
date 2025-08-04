@@ -367,6 +367,9 @@ unsigned long nrf_wifi_bus_pcie_dma_map_inline_rx(void *dev_ctx,
 
 	pcie_dev_ctx = (struct nrf_wifi_bus_pcie_dev_ctx *)dev_ctx;
 	phy_addr = SOC_HOST_DATA_RAM_BASE + (virt_addr - pcie_dev_ctx->addr_hostram_base_inline_rx);  
+#ifdef DDR_32_BIT_ADDR
+	phy_addr |= MEMORY_HOLE_BASE_ADDR;
+#endif /* DDR_32_BIT_ADDR */
 	return phy_addr;
 }
 unsigned long nrf_wifi_bus_pcie_dma_unmap_inline_rx(void *dev_ctx,
@@ -377,6 +380,9 @@ unsigned long nrf_wifi_bus_pcie_dma_unmap_inline_rx(void *dev_ctx,
 	struct nrf_wifi_bus_pcie_dev_ctx *pcie_dev_ctx = NULL;
 	unsigned long virt_addr = 0;
 	pcie_dev_ctx = (struct nrf_wifi_bus_pcie_dev_ctx *)dev_ctx;
+#ifdef DDR_32_BIT_ADDR
+	phy_addr &= ~MEMORY_HOLE_BASE_ADDR;
+#endif /* DDR_32_BIT_ADDR */
 	virt_addr = pcie_dev_ctx->addr_hostram_base_inline_rx + (phy_addr - SOC_HOST_DATA_RAM_BASE);  
 	return virt_addr;
 }
@@ -399,12 +405,18 @@ unsigned long nrf_wifi_bus_pcie_dma_map(void *dev_ctx,
 								     (void *)virt_addr,
 								     len,
 								     dma_dir);
+#ifdef DDR_32_BIT_ADDR
+	phy_addr |= MEMORY_HOLE_BASE_ADDR;
+#endif /* DDR_32_BIT_ADDR */
 #endif /* INLINE_MODE */
 #ifdef INLINE_BB_MODE
 	phy_addr = SOC_HOST_PKTRAM_BASE + (virt_addr - pcie_dev_ctx->addr_pktram_base);  
 #endif /* INLINE_BB_MODE */
 #ifdef OFFLINE_MODE
 	phy_addr = (unsigned long)pcie_dev_ctx->iomem_addr_base + (virt_addr - pcie_dev_ctx->addr_pktram_base);
+#ifdef DDR_32_BIT_ADDR
+	phy_addr |= RPU_ADDR_DATA_RAM_START;
+#endif /* DDR_32_BIT_ADDR */
 #endif /* OFFLINE_MODE */
 
 	return phy_addr;
@@ -425,6 +437,9 @@ unsigned long nrf_wifi_bus_pcie_dma_unmap(void *dev_ctx,
 	pcie_dev_ctx = (struct nrf_wifi_bus_pcie_dev_ctx *)dev_ctx;
 
 #ifdef INLINE_MODE
+#ifdef DDR_32_BIT_ADDR
+	phy_addr &= ~MEMORY_HOLE_BASE_ADDR;
+#endif /* DDR_32_BIT_ADDR */
 	nrf_wifi_osal_bus_pcie_dev_dma_unmap(pcie_dev_ctx->pcie_priv->opriv,
 					     pcie_dev_ctx->os_pcie_dev_ctx,
 					     (void *)phy_addr,
@@ -436,6 +451,9 @@ unsigned long nrf_wifi_bus_pcie_dma_unmap(void *dev_ctx,
 #endif /* INLINE_BB_MODE */
 #ifdef OFFLINE_MODE
 #ifdef SOC_WEZEN
+#ifdef DDR_32_BIT_ADDR
+	phy_addr &= ~RPU_ADDR_DATA_RAM_START;
+#endif /* DDR_32_BIT_ADDR */
 	status = pal_rpu_addr_offset_get(pcie_dev_ctx->pcie_priv->opriv,
 					 RPU_ADDR_DATA_RAM_START + phy_addr,
 					 &virt_addr,

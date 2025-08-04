@@ -9,6 +9,7 @@ RF?=B0
 CMD_DEMO?=0
 SECURE_DOMAIN?=Y
 CMD_RX_BUFF?=N
+DDR_32_BIT?=Y
 ifeq ($(MODE), RADIO-TEST)
 TWT_SUPPORT?=0
 else
@@ -28,6 +29,9 @@ ifeq ($(WLAN_SUPPORT), 1)
 FW_LOAD?=ROM
 endif
 
+ifeq ($(DDR_32_BIT), Y)
+ccflags-y += -DDDR_32_BIT_ADDR
+endif
 
 ifeq ($(INLINE_MODE_RX), Y)
 ccflags-y += -DINLINE_RX
